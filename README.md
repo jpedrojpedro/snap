@@ -5,8 +5,8 @@
 A single-binary local data analytics utility embedding Lua 5.4, DuckDB, and SQLite3. No dependencies to install, no configuration files, no Python environments. Just run queries against your data files.
 
 ```
-./dw data.parquet
-dw> dw.query("SELECT * FROM data LIMIT 10")
+./snap data.parquet
+snap> dw.query("SELECT * FROM data LIMIT 10")
 ```
 
 ## Features
@@ -23,15 +23,15 @@ dw> dw.query("SELECT * FROM data LIMIT 10")
 
 ```bash
 make
-./dw my_pipeline.lua
+./snap my_pipeline.lua
 ```
 
 Or launch the REPL:
 
 ```bash
-./dw
-dw> dw.read("sales.parquet")
-dw> dw.query("SELECT region, SUM(amount) FROM sales GROUP BY region", "markdown")
+./snap
+snap> dw.read("sales.parquet")
+snap> dw.query("SELECT region, SUM(amount) FROM sales GROUP BY region", "markdown")
 ```
 
 ## API

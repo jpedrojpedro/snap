@@ -14,16 +14,16 @@ jobs:
         include:
           - os: macos-14
             target: macos-arm64
-            artifact: dw
+            artifact: snap
           - os: macos-13
             target: macos-x86_64
-            artifact: dw
+            artifact: snap
           - os: ubuntu-22.04
             target: linux-x86_64
-            artifact: dw
+            artifact: snap
           - os: windows-latest
             target: windows-x86_64
-            artifact: dw.exe
+            artifact: snap.exe
 
     runs-on: ${{ matrix.os }}
 
@@ -93,16 +93,15 @@ jobs:
         run: |
           cc -O2 -Wall \
             -I/usr/local/include \
-            -o dw src/main.c src/lua_dw.c \
+            -o snap src/main.c src/lua_dw.c \
             /usr/local/lib/liblua.a \
             /usr/local/lib/libsqlite3.a \
             -L/usr/local/lib -lduckdb \
             -lm -ldl -lpthread -lstdc++
-          # Bundle the shared lib for distribution
           mkdir -p dist
-          cp dw dist/
+          cp snap dist/
           cp /usr/local/lib/libduckdb.so dist/
-          cd dist && tar czf ../dw-${{ matrix.target }}.tar.gz *
+          cd dist && tar czf ../snap-${{ matrix.target }}.tar.gz *
 
       - name: Build (Windows)
         if: matrix.os == 'windows-latest'
@@ -112,29 +111,29 @@ jobs:
             -Ilua-5.4.7/src \
             -Isqlite-amalgamation-3460100 \
             -Iduckdb_lib \
-            -o dw.exe src/main.c src/lua_dw.c \
+            -o snap.exe src/main.c src/lua_dw.c \
             sqlite-amalgamation-3460100/sqlite3.c \
             lua-5.4.7/src/liblua.a \
             -Lduckdb_lib -lduckdb \
             -lm -lstdc++
           mkdir -p dist
-          cp dw.exe dist/
+          cp snap.exe dist/
           cp duckdb_lib/duckdb.dll dist/
 
       - name: Package (macOS)
         if: startsWith(matrix.os, 'macos')
-        run: tar czf dw-${{ matrix.target }}.tar.gz dw
+        run: tar czf snap-${{ matrix.target }}.tar.gz snap
 
       - name: Package (Windows)
         if: matrix.os == 'windows-latest'
         shell: bash
-        run: cd dist && tar czf ../dw-${{ matrix.target }}.zip *
+        run: cd dist && tar czf ../snap-${{ matrix.target }}.zip *
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: dw-${{ matrix.target }}
-          path: dw-${{ matrix.target }}.*
+          name: snap-${{ matrix.target }}
+          path: snap-${{ matrix.target }}.*
 
   release:
     needs: build

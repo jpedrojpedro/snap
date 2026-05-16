@@ -5,7 +5,7 @@ CFLAGS = -O2 -Wall \
 	-I/opt/homebrew/opt/duckdb/include
 
 SRCS = src/main.c src/lua_dw.c
-TARGET = dw
+TARGET = snap
 
 DUCKDB_LIBS = /opt/homebrew/opt/duckdb/lib
 STATIC_LIBS = \
