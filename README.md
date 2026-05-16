@@ -9,6 +9,20 @@ A single-binary local data analytics utility embedding Lua 5.4, DuckDB, and SQLi
 snap> SELECT * FROM data LIMIT 10;
 ```
 
+## Download
+
+Pre-built binaries are available on the [Releases](../../releases) page:
+
+| Platform | File |
+|----------|------|
+| macOS (Apple Silicon) | `snap-macos-arm64.tar.gz` |
+| Linux (x86_64) | `snap-linux-x86_64.tar.gz` |
+| Windows (x86_64) | `snap-windows-x86_64.zip` |
+
+Download, extract, and run. No installation required.
+
+> **macOS note:** If Gatekeeper blocks execution, run `xattr -d com.apple.quarantine ./snap` once.
+
 ## Features
 
 - **Zero setup** — one binary, runs anywhere
@@ -18,14 +32,12 @@ snap> SELECT * FROM data LIMIT 10;
 - **Built-in profiling** — statistical summaries with a single command
 - **Multiple output formats** — table, markdown, JSON
 - **Export pipeline** — write query results to parquet/csv/json with format auto-detection
+- **Sugar syntax** — write SQL directly in the REPL, no quotes or function calls needed
+- **Multi-line SQL** — queries span multiple lines until you end with `;`
 
 ## Quick Start
 
-```bash
-make
-```
-
-Point at your data files — they're auto-loaded as queryable views:
+Point at a data file — it's auto-loaded as a queryable view:
 
 ```bash
 ./snap sales.parquet
@@ -33,13 +45,12 @@ Point at your data files — they're auto-loaded as queryable views:
 snap> SELECT region, SUM(amount) FROM sales GROUP BY region;
 ```
 
-Load multiple files at once:
+Load multiple files at once (combined into a single view with a `source` column):
 
 ```bash
 ./snap data/*.csv
-  -> View 'customers' created from data/customers.csv
-  -> View 'orders' created from data/orders.csv
-snap> SELECT * FROM customers JOIN orders USING(id);
+  -> View 'data' created from 51 files
+snap> SELECT source, COUNT(*) FROM data GROUP BY source;
 ```
 
 Run a Lua pipeline script:
@@ -53,31 +64,36 @@ Or just open the REPL:
 ```bash
 ./snap
 snap> read("sales.parquet")
-snap> SELECT region, SUM(amount) FROM sales GROUP BY region;
+snap> SELECT * FROM sales LIMIT 10;
 ```
-
-> **macOS note:** If Gatekeeper blocks execution, run `xattr -d com.apple.quarantine ./snap` once.
 
 ## API
 
 | Function | Description |
 |----------|-------------|
 | `snap.read(path)` | Load a file as a queryable view (parquet/csv/json) or attach a database (.db/.sqlite) |
-| `snap.meta()` | Print schema metadata for all loaded tables and views |
-| `snap.query(sql, format?)` | Execute SQL and display results. Format: `"table"`, `"markdown"`, `"json"` |
-| `snap.profile(target)` | Run statistical profiling (min, max, avg, std, quantiles) on a table/view |
-| `snap.export(path, sql_or_table)` | Export query results or a table to a file (format inferred from extension) |
+| `snap.meta([table])` | Show schema for all tables, or columns of a specific table |
+| `snap.query(sql [, format])` | Execute SQL and display results. Format: `"table"`, `"markdown"`, `"json"` |
+| `snap.profile(table)` | Statistical profiling (min, max, avg, std, quantiles) |
+| `snap.export(path, source)` | Export query results or a table to a file (format inferred from extension) |
+| `snap.help()` | Show all available methods with descriptions |
+
+In the REPL, all functions work without the `snap.` prefix:
+
+```
+snap> read("employees.parquet")
+snap> meta("employees")
+snap> profile("employees")
+snap> help()
+```
 
 ## Example Pipeline
 
 ```lua
--- Load and analyze employee data
 snap.read("employees.parquet")
 
--- Explore the schema
-snap.meta()
+snap.meta("employees")
 
--- Run analytics
 snap.query([[
     SELECT department, COUNT(*) as headcount, ROUND(AVG(salary), 2) as avg_salary
     FROM employees
@@ -85,14 +101,12 @@ snap.query([[
     ORDER BY avg_salary DESC
 ]], "markdown")
 
--- Profile the data
 snap.profile("employees")
 
--- Export results
 snap.export("summary.csv", "SELECT * FROM employees WHERE salary > 100000")
 ```
 
-## Building
+## Building from Source
 
 Requirements (macOS via Homebrew):
 
