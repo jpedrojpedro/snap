@@ -1,0 +1,1 @@
+-- init.lua: internal bootstrap (reserved for future embedded extensions)

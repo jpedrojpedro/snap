@@ -1,0 +1,152 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: macos-14
+            target: macos-arm64
+            artifact: dw
+          - os: macos-13
+            target: macos-x86_64
+            artifact: dw
+          - os: ubuntu-22.04
+            target: linux-x86_64
+            artifact: dw
+          - os: windows-latest
+            target: windows-x86_64
+            artifact: dw.exe
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies (macOS)
+        if: startsWith(matrix.os, 'macos')
+        run: brew install lua duckdb sqlite
+
+      - name: Install dependencies (Linux)
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential wget unzip libreadline-dev
+
+          # Lua 5.4
+          wget -q https://www.lua.org/ftp/lua-5.4.7.tar.gz
+          tar xzf lua-5.4.7.tar.gz
+          cd lua-5.4.7 && make linux && sudo make install && cd ..
+
+          # SQLite amalgamation
+          wget -q https://www.sqlite.org/2024/sqlite-amalgamation-3460100.zip
+          unzip -q sqlite-amalgamation-3460100.zip
+          cd sqlite-amalgamation-3460100
+          gcc -O2 -c sqlite3.c -o sqlite3.o
+          ar rcs libsqlite3.a sqlite3.o
+          sudo cp libsqlite3.a /usr/local/lib/
+          sudo cp sqlite3.h /usr/local/include/
+          cd ..
+
+          # DuckDB static libs
+          wget -q https://github.com/duckdb/duckdb/releases/download/v1.2.2/libduckdb-linux-amd64.zip
+          unzip -q libduckdb-linux-amd64.zip -d duckdb_lib
+          sudo cp duckdb_lib/duckdb.h /usr/local/include/
+          sudo cp duckdb_lib/libduckdb.so /usr/local/lib/
+          sudo ldconfig
+
+          # DuckDB static build from source for full static linking
+          wget -q https://github.com/duckdb/duckdb/releases/download/v1.2.2/libduckdb-linux-amd64.zip -O /dev/null || true
+          # Use the shared lib approach for Linux (static DuckDB requires building from source)
+          # We'll bundle the .so with the binary instead
+
+      - name: Install dependencies (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: |
+          # Lua
+          curl -sL https://www.lua.org/ftp/lua-5.4.7.tar.gz -o lua.tar.gz
+          tar xzf lua.tar.gz
+          cd lua-5.4.7/src && make mingw && cd ../..
+
+          # SQLite
+          curl -sL https://www.sqlite.org/2024/sqlite-amalgamation-3460100.zip -o sqlite.zip
+          unzip -q sqlite.zip
+
+          # DuckDB
+          curl -sL https://github.com/duckdb/duckdb/releases/download/v1.2.2/libduckdb-windows-amd64.zip -o duckdb.zip
+          unzip -q duckdb.zip -d duckdb_lib
+
+      - name: Build (macOS)
+        if: startsWith(matrix.os, 'macos')
+        run: make
+
+      - name: Build (Linux)
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          cc -O2 -Wall \
+            -I/usr/local/include \
+            -o dw src/main.c src/lua_dw.c \
+            /usr/local/lib/liblua.a \
+            /usr/local/lib/libsqlite3.a \
+            -L/usr/local/lib -lduckdb \
+            -lm -ldl -lpthread -lstdc++
+          # Bundle the shared lib for distribution
+          mkdir -p dist
+          cp dw dist/
+          cp /usr/local/lib/libduckdb.so dist/
+          cd dist && tar czf ../dw-${{ matrix.target }}.tar.gz *
+
+      - name: Build (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: |
+          gcc -O2 -Wall \
+            -Ilua-5.4.7/src \
+            -Isqlite-amalgamation-3460100 \
+            -Iduckdb_lib \
+            -o dw.exe src/main.c src/lua_dw.c \
+            sqlite-amalgamation-3460100/sqlite3.c \
+            lua-5.4.7/src/liblua.a \
+            -Lduckdb_lib -lduckdb \
+            -lm -lstdc++
+          mkdir -p dist
+          cp dw.exe dist/
+          cp duckdb_lib/duckdb.dll dist/
+
+      - name: Package (macOS)
+        if: startsWith(matrix.os, 'macos')
+        run: tar czf dw-${{ matrix.target }}.tar.gz dw
+
+      - name: Package (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: cd dist && tar czf ../dw-${{ matrix.target }}.zip *
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dw-${{ matrix.target }}
+          path: dw-${{ matrix.target }}.*
+
+  release:
+    needs: build
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true

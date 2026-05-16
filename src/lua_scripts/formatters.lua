@@ -1,0 +1,1 @@
+-- formatters.lua: output rendering utilities (reserved for Lua-side extensions)
