@@ -6,7 +6,7 @@ A single-binary local data analytics utility embedding Lua 5.4, DuckDB, and SQLi
 
 ```
 ./snap data.parquet
-snap> dw.query("SELECT * FROM data LIMIT 10")
+snap> SELECT * FROM data LIMIT 10;
 ```
 
 ## Features
@@ -30,7 +30,7 @@ Point at your data files — they're auto-loaded as queryable views:
 ```bash
 ./snap sales.parquet
   -> View 'sales' created from sales.parquet
-snap> dw.query("SELECT region, SUM(amount) FROM sales GROUP BY region", "markdown")
+snap> SELECT region, SUM(amount) FROM sales GROUP BY region;
 ```
 
 Load multiple files at once:
@@ -39,7 +39,7 @@ Load multiple files at once:
 ./snap data/*.csv
   -> View 'customers' created from data/customers.csv
   -> View 'orders' created from data/orders.csv
-snap> dw.query("SELECT * FROM customers JOIN orders USING(id)")
+snap> SELECT * FROM customers JOIN orders USING(id);
 ```
 
 Run a Lua pipeline script:
@@ -52,8 +52,8 @@ Or just open the REPL:
 
 ```bash
 ./snap
-snap> dw.read("sales.parquet")
-snap> dw.query("SELECT * FROM sales LIMIT 10")
+snap> read("sales.parquet")
+snap> SELECT region, SUM(amount) FROM sales GROUP BY region;
 ```
 
 > **macOS note:** If Gatekeeper blocks execution, run `xattr -d com.apple.quarantine ./snap` once.
@@ -62,23 +62,23 @@ snap> dw.query("SELECT * FROM sales LIMIT 10")
 
 | Function | Description |
 |----------|-------------|
-| `dw.read(path)` | Load a file as a queryable view (parquet/csv/json) or attach a database (.db/.sqlite) |
-| `dw.meta()` | Print schema metadata for all loaded tables and views |
-| `dw.query(sql, format?)` | Execute SQL and display results. Format: `"table"`, `"markdown"`, `"json"` |
-| `dw.profile(target)` | Run statistical profiling (min, max, avg, std, quantiles) on a table/view |
-| `dw.export(path, sql_or_table)` | Export query results or a table to a file (format inferred from extension) |
+| `snap.read(path)` | Load a file as a queryable view (parquet/csv/json) or attach a database (.db/.sqlite) |
+| `snap.meta()` | Print schema metadata for all loaded tables and views |
+| `snap.query(sql, format?)` | Execute SQL and display results. Format: `"table"`, `"markdown"`, `"json"` |
+| `snap.profile(target)` | Run statistical profiling (min, max, avg, std, quantiles) on a table/view |
+| `snap.export(path, sql_or_table)` | Export query results or a table to a file (format inferred from extension) |
 
 ## Example Pipeline
 
 ```lua
 -- Load and analyze employee data
-dw.read("employees.parquet")
+snap.read("employees.parquet")
 
 -- Explore the schema
-dw.meta()
+snap.meta()
 
 -- Run analytics
-dw.query([[
+snap.query([[
     SELECT department, COUNT(*) as headcount, ROUND(AVG(salary), 2) as avg_salary
     FROM employees
     GROUP BY department
@@ -86,10 +86,10 @@ dw.query([[
 ]], "markdown")
 
 -- Profile the data
-dw.profile("employees")
+snap.profile("employees")
 
 -- Export results
-dw.export("summary.csv", "SELECT * FROM employees WHERE salary > 100000")
+snap.export("summary.csv", "SELECT * FROM employees WHERE salary > 100000")
 ```
 
 ## Building
@@ -113,7 +113,7 @@ make test
 ┌─────────────────────────────────┐
 │        Lua 5.4 Runtime          │
 ├─────────────────────────────────┤
-│         dw C bindings           │
+│       snap C bindings           │
 ├────────────────┬────────────────┤
 │    DuckDB      │    SQLite3     │
 │  (analytics)   │   (auditing)   │

@@ -3,7 +3,7 @@ print("--- Starting Monolith Verification Script ---")
 
 -- 1. Create dummy mock data via SQL query
 print("[Test 1] Initializing mock data file...")
-dw.query([[
+snap.query([[
     COPY (
         SELECT 1 as id, 'Alice' as name, 'Data Engineer' as role, 10500.00 as salary
         UNION ALL
@@ -15,11 +15,11 @@ dw.query([[
 
 -- 2. Validate auto-inference load capability
 print("[Test 2] Testing auto-inference loader...")
-dw.read("tests/mock_staff.parquet")
+snap.read("tests/mock_staff.parquet")
 
 -- 3. Assert schema evaluation capabilities
 print("[Test 3] Printing database schema metadata:")
-dw.meta()
+snap.meta()
 
 -- 4. Assert Analytical Data Transformation & Markdown output formatting
 print("[Test 4] Executing analytical aggregation query:")
@@ -32,14 +32,14 @@ local query_str = [[
     GROUP BY role 
     ORDER BY average_salary DESC;
 ]]
-dw.query(query_str, "markdown")
+snap.query(query_str, "markdown")
 
 -- 5. Test statistical profile command
 print("[Test 5] Running automated target profiling:")
-dw.profile("mock_staff")
+snap.profile("mock_staff")
 
 -- 6. Verify export facilities
 print("[Test 6] Testing pipeline data exporting capabilities...")
-dw.export("tests/high_earners.csv", "SELECT * FROM mock_staff WHERE salary > 9000")
+snap.export("tests/high_earners.csv", "SELECT * FROM mock_staff WHERE salary > 9000")
 
 print("--- Integration Tests Successfully Completed ---")
