@@ -17,13 +17,13 @@ int main(int argc, char *argv[]) {
     } else {
         /* Simple REPL */
         char buf[4096];
-        printf("dw> ");
+        printf("snap> ");
         while (fgets(buf, sizeof(buf), stdin)) {
             if (luaL_dostring(L, buf) != LUA_OK) {
                 fprintf(stderr, "%s\n", lua_tostring(L, -1));
                 lua_pop(L, 1);
             }
-            printf("dw> ");
+            printf("snap> ");
         }
     }
 
