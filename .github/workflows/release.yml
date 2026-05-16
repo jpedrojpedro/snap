@@ -15,9 +15,6 @@ jobs:
           - os: macos-14
             target: macos-arm64
             artifact: snap
-          - os: macos-13
-            target: macos-x86_64
-            artifact: snap
           - os: ubuntu-22.04
             target: linux-x86_64
             artifact: snap
