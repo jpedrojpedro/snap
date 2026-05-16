@@ -1,6 +1,6 @@
 # SNAP
 
-**Simple Native Analytics Portable** — instantly read parquet files with zero setup.
+**Simple Native Analytics Portable** — instantly read & manipulate files with zero setup.
 
 A single-binary local data analytics utility embedding Lua 5.4, DuckDB, and SQLite3. No dependencies to install, no configuration files, no Python environments. Just run queries against your data files.
 
