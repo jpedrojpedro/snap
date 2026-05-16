@@ -1,5 +1,7 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <libgen.h>
 #include "lua_dw.h"
 
 static int is_data_file(const char *path) {
@@ -8,6 +10,15 @@ static int is_data_file(const char *path) {
     return (strcmp(dot, ".csv") == 0 || strcmp(dot, ".parquet") == 0 ||
             strcmp(dot, ".json") == 0 || strcmp(dot, ".db") == 0 ||
             strcmp(dot, ".sqlite") == 0);
+}
+
+static void get_dirname(const char *path, char *out, size_t sz) {
+    char *tmp = strdup(path);
+    char *dir = dirname(tmp);
+    char *base = basename(dir);
+    strncpy(out, base, sz - 1);
+    out[sz - 1] = '\0';
+    free(tmp);
 }
 
 static void repl(lua_State *L) {
@@ -30,10 +41,25 @@ int main(int argc, char *argv[]) {
 
     if (argc > 1) {
         if (is_data_file(argv[1])) {
-            /* Load all data file arguments, then open REPL */
-            for (int i = 1; i < argc; i++) {
+            if (argc > 2) {
+                /* Multiple files: combine into single view using glob */
+                char dir[256];
+                get_dirname(argv[1], dir, sizeof(dir));
+                const char *ext = strrchr(argv[1], '.');
+                char cmd[8192];
+                snprintf(cmd, sizeof(cmd),
+                    "dw.query(\"CREATE OR REPLACE VIEW \\\"%s\\\" AS SELECT * EXCLUDE(filename), replace(filename, '%s/', '') AS source FROM read_csv_auto('%s/*%s', filename=true)\")",
+                    dir, dirname(strdup(argv[1])), dirname(strdup(argv[1])), ext ? ext : ".csv");
+                if (luaL_dostring(L, cmd) != LUA_OK) {
+                    fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
+                    lua_pop(L, 1);
+                } else {
+                    printf("  -> View '%s' created from %d files\n", dir, argc - 1);
+                }
+            } else {
+                /* Single file */
                 char cmd[4096];
-                snprintf(cmd, sizeof(cmd), "dw.read(\"%s\")", argv[i]);
+                snprintf(cmd, sizeof(cmd), "dw.read(\"%s\")", argv[1]);
                 if (luaL_dostring(L, cmd) != LUA_OK) {
                     fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
                     lua_pop(L, 1);
