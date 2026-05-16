@@ -23,16 +23,40 @@ snap> dw.query("SELECT * FROM data LIMIT 10")
 
 ```bash
 make
+```
+
+Point at your data files — they're auto-loaded as queryable views:
+
+```bash
+./snap sales.parquet
+  -> View 'sales' created from sales.parquet
+snap> dw.query("SELECT region, SUM(amount) FROM sales GROUP BY region", "markdown")
+```
+
+Load multiple files at once:
+
+```bash
+./snap data/*.csv
+  -> View 'customers' created from data/customers.csv
+  -> View 'orders' created from data/orders.csv
+snap> dw.query("SELECT * FROM customers JOIN orders USING(id)")
+```
+
+Run a Lua pipeline script:
+
+```bash
 ./snap my_pipeline.lua
 ```
 
-Or launch the REPL:
+Or just open the REPL:
 
 ```bash
 ./snap
 snap> dw.read("sales.parquet")
-snap> dw.query("SELECT region, SUM(amount) FROM sales GROUP BY region", "markdown")
+snap> dw.query("SELECT * FROM sales LIMIT 10")
 ```
+
+> **macOS note:** If Gatekeeper blocks execution, run `xattr -d com.apple.quarantine ./snap` once.
 
 ## API
 
