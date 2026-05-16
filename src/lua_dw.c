@@ -149,10 +149,17 @@ static int l_read(lua_State *L) {
     return 0;
 }
 
-/* dw.meta() */
+/* snap.meta(table_name?) */
 static int l_meta(lua_State *L) {
     ensure_init();
-    const char *sql = "SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema = 'main';";
+    const char *table = luaL_optstring(L, 1, NULL);
+    char sql[2048];
+    if (table)
+        snprintf(sql, sizeof(sql),
+            "SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = 'main' AND table_name = '%s';", table);
+    else
+        snprintf(sql, sizeof(sql),
+            "SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema = 'main';");
     duckdb_result res;
     if (duckdb_query(conn, sql, &res) == DuckDBError) {
         lua_pushstring(L, duckdb_result_error(&res));
@@ -242,12 +249,31 @@ static int l_export(lua_State *L) {
     return 0;
 }
 
+/* snap.help() */
+static int l_help(lua_State *L) {
+    (void)L;
+    printf("\n");
+    printf("  snap.read(path)            Load a file as a queryable view (parquet/csv/json/db)\n");
+    printf("  snap.meta([table])         Show schema for all tables, or a specific table\n");
+    printf("  snap.query(sql [,fmt])     Execute SQL. Format: \"table\", \"markdown\", \"json\"\n");
+    printf("  snap.profile(table)        Statistical profiling (min, max, avg, std, quantiles)\n");
+    printf("  snap.export(path, source)  Export table or query results to file\n");
+    printf("  snap.help()                Show this help message\n");
+    printf("\n");
+    printf("  In the REPL, all functions work without the 'snap.' prefix.\n");
+    printf("  SQL statements are executed directly (no quotes needed).\n");
+    printf("  Multi-line SQL is supported — just end with a semicolon.\n");
+    printf("\n");
+    return 0;
+}
+
 static const struct luaL_Reg dw_funcs[] = {
     {"read", l_read},
     {"meta", l_meta},
     {"query", l_query},
     {"profile", l_profile},
     {"export", l_export},
+    {"help", l_help},
     {NULL, NULL}
 };
 

@@ -8,6 +8,7 @@ static const char *embedded_main =
 "query = snap.query\n"
 "profile = snap.profile\n"
 "export = snap.export\n"
+"help = snap.help\n"
 "\n"
 "local sql_keywords = {\n"
 "    SELECT=true, INSERT=true, UPDATE=true, DELETE=true, CREATE=true,\n"
